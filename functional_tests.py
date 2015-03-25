@@ -15,23 +15,35 @@ class NewVisitorTest(unittest.TestCase):
         self.browser.quit()
 
     def test_can_start_a_list_and_retrieve_it_later(self):
-        # Open the to-do app home page
+        # Zac wants to check out this new to-do list online
         self.browser.get('http://localhost:8000')
 
-        # The page title and header should mention to-do lists
+        # He notices the page title and header mention to-do lists, this is good because otherwise
+        # he might be a bit dissapointed and confused (he can read)
         self.assertIn('To-Do', self.browser.title)
+        header_text = self.browser.find_element_by_tag_name('h1').text
+        self.assertIn('To-Do', header_text)
+
+        # Zac is only 5, and not particularly good at finding things sometimes, so it's good that
+        # he sees a text box in the home page where he can start his to do list
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        self.assertEqual(inputbox.get_attribute('placeholder'), 'Enter a to-do item')
+
+        # Zac types "clean up my room" into the text box (he needs to do this more often)
+        inputbox.send_keys('clean up my room')
+
+        # When he hits enter/return, the page updates and now it lists
+        # "1: clean up my room" as an item in the to-do list table
+        inputbox.send_keys(Keys.ENTER)
+
+        table = self.browser.find_element_by_id('id_list_table')
+        rows = table.find_elements_by_tag_name('tr')
+        self.assertTrue(any(row.text == '1: clean up my room' for row in rows))
+
+        # There is still a text box to enter additional list items, which is good because there
+        # are many other things Zac needs to do. He enters 'learn to tie my shoes'.
         self.fail('Finish the test!')
 
-
-        # This is what we want to see:
-        #
-        # The option to insert an item to the list right away.
-        #
-        # Enter the list item into a text box and hit enter/return.
-        #
-        # When hitting enter/return, the page updates and lists the first item.
-        #
-        # There is still a text box to enter additional list items.
         #
         # One item can be entered at a time.
         #
