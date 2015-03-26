@@ -7,10 +7,10 @@ class NewVisitorTest(LiveServerTestCase):
 
     def setUp(self):
         self.browser = webdriver.Firefox()
-        # A 1-3 second delay is necessary to give firefox a chance to load to avoid the error:
-        #
-        # selenium.common.exceptions.WebDriverException: Message: The browser appears to have
-        # exited before we could connect...
+        ## A 1-3 second delay is necessary to give firefox a chance to load to avoid the error:
+        ##
+        ## selenium.common.exceptions.WebDriverException: Message: The browser appears to have
+        ## exited before we could connect...
         self.browser.implicitly_wait(3)
 
     def tearDown(self):
@@ -32,16 +32,18 @@ class NewVisitorTest(LiveServerTestCase):
         self.assertIn('To-Do', header_text)
 
         # Zac is only 5, and not particularly good at finding things sometimes, so it's good that
-        # he sees a text box in the home page where he can start his to do list
+        # he sees a text box in the home page (not eslewhere) where he can start his to do list
         inputbox = self.browser.find_element_by_id('id_new_item')
         self.assertEqual(inputbox.get_attribute('placeholder'), 'Enter a to-do item')
 
         # Zac types "clean up my room" into the text box (he needs to do this more often)
         inputbox.send_keys('clean up my room')
 
-        # When he hits enter/return, the page updates and now it lists
+        # When he hits enter/return, he is taken to a new URL, and now the page lists
         # "1: clean up my room" as an item in the to-do list table
         inputbox.send_keys(Keys.ENTER)
+        zac_list_url = self.browser.current_url
+        self.assertRegex(zac_list_url, '/lists/.+')
         self.check_for_row_in_list_table('1: clean up my room')
 
         # There is still a text box to enter additional list items, which is good because there
@@ -54,6 +56,36 @@ class NewVisitorTest(LiveServerTestCase):
         self.check_for_row_in_list_table('1: clean up my room')
         self.check_for_row_in_list_table('2: learn to tie my shoes')
 
+        # Now a new user, Ethan, comes along to the site
+
+        ## We use a new browser session to make sure that no information of Zac's is coming
+        ## through from cookies, etc.
+        self.browser.quit()
+        self.browser = webdriver.Firefox()
+
+        # Ethan visits the home page. There is no sign of Zac's list
+        self.browser.get(self.live_server_url)
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('1: clean up my room', page_text)
+        self.assertNotIn('2: learn to tie my shoes', page_text)
+
+        # Ethan starts a new list by entering a new item. He is less focused on being responsible
+        # than Zac and just wants to play.
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys('Play Minecraft')
+        inputbox.send_keys(Keys.ENTER)
+
+        # Ethan gers his own unique URL
+        ethan_list_url = self.browser.current_url
+        self.assertRegex(ethan_list_url, '/lists/.+')
+        self.assertNotEqual(zac_list_url, ethan_list_url)
+
+        # Again, there is no trace of Zac's list
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('clean up my room', page_text)
+        self.assertIn('Play Minecraft', page_text)
+
+        # Satisfied, they both go back to sleep, or not...
 
         self.fail('Finish the test!')
 
